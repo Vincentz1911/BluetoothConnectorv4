@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".DeviceActivity">
+
+    <TextView
+        android:id="@+id/DeviceName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:text="Device Name" />
+
+    <TextView
+        android:id="@+id/DeviceAddress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:layout_below="@+id/DeviceName"
+        android:text="Device Address" />
+
+
+    <Button
+        android:id="@+id/btn_Connect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:layout_below="@id/DeviceAddress"
+        android:text="Connect" />
+
+    <Button
+        android:id="@+id/btn_Disconnect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:layout_below="@id/DeviceAddress"
+        android:layout_toRightOf="@id/btn_Connect"
+        android:text="Disconnect" />
+
+    <Button
+        android:layout_margin="20dp"
+        android:id="@+id/btn_Unpair"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/DeviceAddress"
+        android:layout_toRightOf="@id/btn_Disconnect"
+        android:text="Unpair" />
+
+</RelativeLayout>
