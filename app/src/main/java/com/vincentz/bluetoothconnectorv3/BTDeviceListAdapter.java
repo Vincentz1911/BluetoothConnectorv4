@@ -14,12 +14,12 @@ import java.util.List;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-public class BTDeviceAdapter extends ArrayAdapter<BTDeviceModel> {
+public class BTDeviceListAdapter extends ArrayAdapter<BTDeviceModel> {
 
         private Context mContext;
         private List<BTDeviceModel> btDeviceModels;
 
-        public BTDeviceAdapter(@NonNull Context context, ArrayList<BTDeviceModel> list) {
+        public BTDeviceListAdapter(@NonNull Context context, ArrayList<BTDeviceModel> list) {
             super(context, 0 , list);
             mContext = context;
             btDeviceModels = list;

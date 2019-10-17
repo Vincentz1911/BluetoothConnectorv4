@@ -1,5 +1,6 @@
 package com.vincentz.bluetoothconnectorv3;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.os.Bundle;
 
@@ -8,18 +9,16 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.widget.*;
 import android.view.*;
 import android.content.*;
 import android.bluetooth.*;
 
-import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.UUID;
 
 import static android.widget.Toast.makeText;
 
@@ -28,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
     ListView BTDevices_list;
 
     private BluetoothAdapter BA;
-    private BTDeviceAdapter mAdapter;
+    private BTDeviceListAdapter mAdapter;
 
     public ArrayList<BTDeviceModel> BTDevices = new ArrayList<>();
 
@@ -48,10 +47,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        BTDevices_list = findViewById(R.id.BTDevices_list);
-
         InitGUI();
         InitBluetooth();
+
+        //ASKING PERMISSION FOR ACCESSING LOCATION FOR BTLe
+        new RequestPermissions(this, Manifest.permission.ACCESS_COARSE_LOCATION);
+        //Scanning BTLe
+        new BTLowEnergy().BluetoothLEScanner(BA);
 
         //Search for new BT
         IntentFilter filter = new IntentFilter();
@@ -64,8 +66,11 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
         registerReceiver(mReceiver, filter);
 
+
+
         BA.startDiscovery();
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -116,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //Clicking item on list
+        BTDevices_list = findViewById(R.id.BTDevices_list);
         BTDevices_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -148,6 +154,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        //LONGPRESS on item on list
         BTDevices_list.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long l) {
@@ -190,7 +197,26 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    void PairDevice(BTDeviceModel device){
+
+    void Connect(String deviceAddress){
+        BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        BluetoothDevice device = btAdapter.getRemoteDevice(deviceAddress);
+
+        UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+
+        BluetoothSocket socket = null;
+        try {
+            socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
+            socket.connect();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+    void PairDevice(BTDeviceModel device) {
 
     }
 
@@ -226,8 +252,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void UpdateListView() {
-        mAdapter = new BTDeviceAdapter(this, BTDevices);
+        mAdapter = new BTDeviceListAdapter(this, BTDevices);
         BTDevices_list.setAdapter(mAdapter);
+    }
+
+    public void AddToDeviceList(BluetoothDevice device){
+        //if device is already in list break
+        for (BTDeviceModel bt : BTDevices) {
+            if (bt.getAddress().equals(device.getAddress())) return;
+        }
+
+        //Checks if Name is null and not already in deviceList
+        String deviceName = device.getName();
+        if (deviceName == null) deviceName = device.getAddress();
+        BTDevices.add(new BTDeviceModel(deviceName, device.getAddress(), device, false, false, 0));
+        makeText(MainActivity.this, "Found device " + device.getName(), Toast.LENGTH_SHORT).show();
+
+        mAdapter.notifyDataSetChanged();
+        //UpdateListView();
     }
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -250,19 +292,21 @@ public class MainActivity extends AppCompatActivity {
                 findViewById(R.id.loadingPanel).setVisibility(View.GONE);
 
             } else if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                //if device is already in list break
-                for (BTDeviceModel bt : BTDevices) {
-                    if (bt.getAddress().equals(device.getAddress())) return;
-                }
+                AddToDeviceList(device);
 
-                //Checks if Name is null and not already in deviceList
-                String deviceName = device.getName();
-                if (deviceName == null) deviceName = device.getAddress();
-                BTDevices.add(new BTDeviceModel(deviceName, device.getAddress(), device, false, false, 0));
-                makeText(MainActivity.this, "Found device " + device.getName(), Toast.LENGTH_SHORT).show();
-
-                mAdapter.notifyDataSetChanged();
-                //UpdateListView();
+//                //if device is already in list break
+//                for (BTDeviceModel bt : BTDevices) {
+//                    if (bt.getAddress().equals(device.getAddress())) return;
+//                }
+//
+//                //Checks if Name is null and not already in deviceList
+//                String deviceName = device.getName();
+//                if (deviceName == null) deviceName = device.getAddress();
+//                BTDevices.add(new BTDeviceModel(deviceName, device.getAddress(), device, false, false, 0));
+//                makeText(MainActivity.this, "Found device " + device.getName(), Toast.LENGTH_SHORT).show();
+//
+//                mAdapter.notifyDataSetChanged();
+//                //UpdateListView();
             }
 
         }
