@@ -2,13 +2,18 @@ package com.vincentz.bluetoothconnectorv3;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanResult;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.util.Log;
 import android.widget.*;
 import android.view.*;
 import android.content.*;
@@ -17,6 +22,7 @@ import android.bluetooth.*;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -53,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
         //ASKING PERMISSION FOR ACCESSING LOCATION FOR BTLe
         new RequestPermissions(this, Manifest.permission.ACCESS_COARSE_LOCATION);
         //Scanning BTLe
-        new BTLowEnergy().BluetoothLEScanner(BA);
+        //new BTLowEnergy().BluetoothLEScanner(BA);
 
         //Search for new BT
         IntentFilter filter = new IntentFilter();
@@ -64,13 +70,181 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
+        filter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
         registerReceiver(mReceiver, filter);
 
 
-
+        BluetoothLEScanner(BA);
         BA.startDiscovery();
     }
 
+    void BluetoothLEScanner(BluetoothAdapter BA){
+        BA.getBluetoothLeScanner().startScan(new ScanCallback() {
+            @Override
+            public void onScanResult(int callbackType, ScanResult result) {
+                super.onScanResult(callbackType, result);
+
+                Log.d("Results", "onScanResult: " + result.getDevice());
+                AddToDeviceList(result.getDevice());
+            }
+
+            @Override
+            public void onBatchScanResults(List<ScanResult> results) {
+                super.onBatchScanResults(results);
+            }
+
+            @Override
+            public void onScanFailed(int errorCode) {
+                super.onScanFailed(errorCode);
+            }
+            @Override
+            public int hashCode() {
+                return super.hashCode();
+            }
+            @Override
+            public boolean equals(@Nullable Object obj) {
+                return super.equals(obj);
+            }
+            @Override
+            protected Object clone() throws CloneNotSupportedException { return super.clone(); }
+            @NonNull
+            @Override
+            public String toString() {
+                return super.toString();
+            }
+            @Override
+            protected void finalize() throws Throwable { super.finalize(); }
+        });
+    }
+
+    void Connect(String deviceAddress){
+        BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        BluetoothDevice device = btAdapter.getRemoteDevice(deviceAddress);
+
+        UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+
+        BluetoothSocket socket = null;
+        try {
+            socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
+            socket.connect();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    void PairDevice(BTDeviceModel device) {
+
+    }
+
+    public BluetoothAdapter InitBluetooth() {
+        //Checking if have bluetooth
+        if (BluetoothAdapter.getDefaultAdapter() == null) {
+            makeText(this, "Bluetooth not supported", Toast.LENGTH_LONG).show();
+            finish();
+        }
+        //Enabling bluetooth if not turned on
+        BA = BluetoothAdapter.getDefaultAdapter();
+        if (!BA.isEnabled()) {
+            makeText(this, "Turning on Bluetooth", Toast.LENGTH_LONG).show();
+            BA.enable();
+        }
+        //Naming local bluetooth
+        if (BA.getName() == null) getSupportActionBar().setTitle(BA.getAddress());
+        else getSupportActionBar().setTitle(BA.getName());
+
+        return BA;
+    }
+
+    private void BondedDevices() {
+        Set<BluetoothDevice> pairedSet = BA.getBondedDevices();
+        for (BluetoothDevice bt : pairedSet) {
+            boolean bonded = false;
+            boolean connected = false;
+            if (bt.getBondState() == 12) bonded = true;
+
+            BTDevices.add(new BTDeviceModel(bt.getName(), bt.getAddress(), bt, bonded, connected, R.drawable.ic_action_bluetooth_paired));
+        }
+        UpdateListView();
+    }
+
+    private void UpdateListView() {
+        mAdapter = new BTDeviceListAdapter(this, BTDevices);
+        BTDevices_list.setAdapter(mAdapter);
+    }
+
+    public void AddToDeviceList(BluetoothDevice device){
+        //if device is already in list break
+        for (BTDeviceModel bt : BTDevices) {
+            if (bt.getAddress().equals(device.getAddress())) return;
+        }
+
+        //Checks if Name is null and not already in deviceList
+        String deviceName = device.getName();
+        if (deviceName == null) deviceName = device.getAddress();
+        BTDevices.add(new BTDeviceModel(deviceName, device.getAddress(), device, false, false, 0));
+        makeText(MainActivity.this, "Found device " + device.getName(), Toast.LENGTH_SHORT).show();
+
+        mAdapter.notifyDataSetChanged();
+        //UpdateListView();
+    }
+
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+
+            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
+                //discovery starts, we can show progress dialog or perform other tasks
+                findViewById(R.id.loadingPanel).setVisibility(View.VISIBLE);
+                makeText(MainActivity.this, "Scanning for bluetooth devices", Toast.LENGTH_LONG).show();
+                BTDevices = new ArrayList<>();
+                BondedDevices();
+
+            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                //discovery finishes, dismis progress dialog
+
+                makeText(MainActivity.this, "Finished scanning", Toast.LENGTH_LONG).show();
+                findViewById(R.id.loadingPanel).setVisibility(View.GONE);
+
+            } else if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                AddToDeviceList(device);
+
+            } else if (BluetoothDevice.ACTION_PAIRING_REQUEST.equals(action)){
+                Toast.makeText(MainActivity.this,"Trying to pair with " + device.getName(), Toast.LENGTH_LONG).show();
+                setBluetoothPairingPin(device);
+            }
+
+
+
+        }
+    };
+
+    public void setBluetoothPairingPin(BluetoothDevice device)
+    {
+        //byte[] pinBytes = convertPinToBytes("0000");
+
+        try {
+            byte[] pin = (byte[]) BluetoothDevice.class.getMethod("convertPinToBytes", String.class).invoke(BluetoothDevice.class, "1234");
+            Log.d("", "Try to set the PIN");
+            Method m = device.getClass().getMethod("setPin", byte[].class);
+            m.invoke(device, pin);
+            Log.d("", "Success to add the PIN.");
+            try {
+                device.getClass().getMethod("setPairingConfirmation", boolean.class).invoke(device, true);
+                Log.d("", "Success to setPairingConfirmation.");
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                Log.e("", e.getMessage());
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            Log.e("", e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -197,120 +371,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
-    void Connect(String deviceAddress){
-        BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
-
-        BluetoothDevice device = btAdapter.getRemoteDevice(deviceAddress);
-
-        UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-
-        BluetoothSocket socket = null;
-        try {
-            socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
-            socket.connect();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-
-    void PairDevice(BTDeviceModel device) {
-
-    }
-
-    public BluetoothAdapter InitBluetooth() {
-        //Checking if have bluetooth
-        if (BluetoothAdapter.getDefaultAdapter() == null) {
-            makeText(this, "Bluetooth not supported", Toast.LENGTH_LONG).show();
-            finish();
-        }
-        //Enabling bluetooth if not turned on
-        BA = BluetoothAdapter.getDefaultAdapter();
-        if (!BA.isEnabled()) {
-            makeText(this, "Turning on Bluetooth", Toast.LENGTH_LONG).show();
-            BA.enable();
-        }
-        //Naming local bluetooth
-        if (BA.getName() == null) getSupportActionBar().setTitle(BA.getAddress());
-        else getSupportActionBar().setTitle(BA.getName());
-
-        return BA;
-    }
-
-    private void BondedDevices() {
-        Set<BluetoothDevice> pairedSet = BA.getBondedDevices();
-        for (BluetoothDevice bt : pairedSet) {
-            boolean bonded = false;
-            boolean connected = false;
-            if (bt.getBondState() == 12) bonded = true;
-
-            BTDevices.add(new BTDeviceModel(bt.getName(), bt.getAddress(), bt, bonded, connected, R.drawable.ic_action_bluetooth_paired));
-        }
-        UpdateListView();
-    }
-
-    private void UpdateListView() {
-        mAdapter = new BTDeviceListAdapter(this, BTDevices);
-        BTDevices_list.setAdapter(mAdapter);
-    }
-
-    public void AddToDeviceList(BluetoothDevice device){
-        //if device is already in list break
-        for (BTDeviceModel bt : BTDevices) {
-            if (bt.getAddress().equals(device.getAddress())) return;
-        }
-
-        //Checks if Name is null and not already in deviceList
-        String deviceName = device.getName();
-        if (deviceName == null) deviceName = device.getAddress();
-        BTDevices.add(new BTDeviceModel(deviceName, device.getAddress(), device, false, false, 0));
-        makeText(MainActivity.this, "Found device " + device.getName(), Toast.LENGTH_SHORT).show();
-
-        mAdapter.notifyDataSetChanged();
-        //UpdateListView();
-    }
-
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-
-            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
-                //discovery starts, we can show progress dialog or perform other tasks
-                findViewById(R.id.loadingPanel).setVisibility(View.VISIBLE);
-                makeText(MainActivity.this, "Scanning for bluetooth devices", Toast.LENGTH_LONG).show();
-                BTDevices = new ArrayList<>();
-                BondedDevices();
-
-            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                //discovery finishes, dismis progress dialog
-
-                makeText(MainActivity.this, "Finished scanning", Toast.LENGTH_LONG).show();
-                findViewById(R.id.loadingPanel).setVisibility(View.GONE);
-
-            } else if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                AddToDeviceList(device);
-
-//                //if device is already in list break
-//                for (BTDeviceModel bt : BTDevices) {
-//                    if (bt.getAddress().equals(device.getAddress())) return;
-//                }
-//
-//                //Checks if Name is null and not already in deviceList
-//                String deviceName = device.getName();
-//                if (deviceName == null) deviceName = device.getAddress();
-//                BTDevices.add(new BTDeviceModel(deviceName, device.getAddress(), device, false, false, 0));
-//                makeText(MainActivity.this, "Found device " + device.getName(), Toast.LENGTH_SHORT).show();
-//
-//                mAdapter.notifyDataSetChanged();
-//                //UpdateListView();
-            }
-
-        }
-    };
 }
 
 //

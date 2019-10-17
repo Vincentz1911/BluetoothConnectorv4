@@ -1,6 +1,7 @@
 package com.vincentz.bluetoothconnectorv3;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.util.Log;
@@ -18,8 +19,9 @@ public class BTLowEnergy {
             public void onScanResult(int callbackType, ScanResult result) {
                 super.onScanResult(callbackType, result);
 
+
                 Log.d("Results", "onScanResult: " + result.getDevice());
-                //BTDevices.add()
+                //new BTDeviceList().AddToDeviceList(result.getDevice());
             }
 
             @Override
