@@ -19,7 +19,7 @@ public class BTDeviceListAdapter extends ArrayAdapter<BTDeviceModel> {
         private Context mContext;
         private List<BTDeviceModel> btDeviceModels;
 
-        public BTDeviceListAdapter(@NonNull Context context, ArrayList<BTDeviceModel> list) {
+        BTDeviceListAdapter(@NonNull Context context, ArrayList<BTDeviceModel> list) {
             super(context, 0 , list);
             mContext = context;
             btDeviceModels = list;
@@ -40,6 +40,8 @@ public class BTDeviceListAdapter extends ArrayAdapter<BTDeviceModel> {
             TextView address = listItem.findViewById(R.id.textView_address);
             address.setText(currentDevice.getAddress());
 
+            TextView type = listItem.findViewById(R.id.textView_type);
+            type.setText(currentDevice.getType());
 //            TextView status = listItem.findViewById(R.id.textView_status);
 //            if (currentDevice.getConnected()) status.setText("Connected");
 

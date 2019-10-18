@@ -36,19 +36,19 @@ public class MainActivity extends AppCompatActivity {
     private BTDeviceListAdapter mAdapter;
 
     public ArrayList<BTDeviceModel> BTDevices = new ArrayList<>();
+    private boolean hideNoName = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                BA.cancelDiscovery();
                 BA.startDiscovery();
             }
         });
@@ -58,33 +58,28 @@ public class MainActivity extends AppCompatActivity {
 
         //ASKING PERMISSION FOR ACCESSING LOCATION FOR BTLe
         new RequestPermissions(this, Manifest.permission.ACCESS_COARSE_LOCATION);
-        //Scanning BTLe
-        //new BTLowEnergy().BluetoothLEScanner(BA);
 
-        //Search for new BT
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
 
         filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
-        filter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
         registerReceiver(mReceiver, filter);
 
-
+        //Search for new BT
         BluetoothLEScanner(BA);
         BA.startDiscovery();
     }
 
-    void BluetoothLEScanner(BluetoothAdapter BA){
+    void BluetoothLEScanner(BluetoothAdapter BA) {
         BA.getBluetoothLeScanner().startScan(new ScanCallback() {
             @Override
             public void onScanResult(int callbackType, ScanResult result) {
                 super.onScanResult(callbackType, result);
-
-                Log.d("Results", "onScanResult: " + result.getDevice());
                 AddToDeviceList(result.getDevice());
             }
 
@@ -97,27 +92,36 @@ public class MainActivity extends AppCompatActivity {
             public void onScanFailed(int errorCode) {
                 super.onScanFailed(errorCode);
             }
+
             @Override
             public int hashCode() {
                 return super.hashCode();
             }
+
             @Override
             public boolean equals(@Nullable Object obj) {
                 return super.equals(obj);
             }
+
             @Override
-            protected Object clone() throws CloneNotSupportedException { return super.clone(); }
+            protected Object clone() throws CloneNotSupportedException {
+                return super.clone();
+            }
+
             @NonNull
             @Override
             public String toString() {
                 return super.toString();
             }
+
             @Override
-            protected void finalize() throws Throwable { super.finalize(); }
+            protected void finalize() throws Throwable {
+                super.finalize();
+            }
         });
     }
 
-    void Connect(String deviceAddress){
+    void Connect(String deviceAddress) {
         BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
 
         BluetoothDevice device = btAdapter.getRemoteDevice(deviceAddress);
@@ -133,9 +137,76 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    String GetType(BluetoothDevice device){
+        int majorBtClass = device.getBluetoothClass().getMajorDeviceClass();
+        switch (majorBtClass) {
+            case BluetoothClass.Device.Major.AUDIO_VIDEO:
+                return "Audio/Video";
+            case BluetoothClass.Device.Major.COMPUTER:
+                return "Computer";
+            case BluetoothClass.Device.Major.HEALTH:
+                return "Health";
+            case BluetoothClass.Device.Major.IMAGING:
+                return "Imaging";
+            case BluetoothClass.Device.Major.MISC:
+                return "Misc";
+            case BluetoothClass.Device.Major.NETWORKING:
+                return "Networking";
+            case BluetoothClass.Device.Major.PERIPHERAL:
+                return "Peripheral";
+            case BluetoothClass.Device.Major.PHONE:
+                return "Phone";
+            case BluetoothClass.Device.Major.TOY:
+                return "Toy";
+            case BluetoothClass.Device.Major.UNCATEGORIZED:
+                return "Uncategorized";
+            case BluetoothClass.Device.Major.WEARABLE:
+                return "Wearable";
+            default:
+                return "Unknown (" + majorBtClass + ")";
+        }
+    }
 
-    void PairDevice(BTDeviceModel device) {
+    void PairDevice(final BTDeviceModel device) {
+        new AlertDialog.Builder(MainActivity.this)
+                .setTitle("Pair bluetooth device?")
+                .setMessage("Do you want to pair with " + device.getName())
+                .setIcon(R.drawable.ic_action_bluetooth_connected)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+//                        if (BA.isDiscovering()) {
+//                            BA.cancelDiscovery();
+//                        }
+                        device.getDevice().createBond();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) { }
+                }).show();
+    }
 
+    void UnpairDevice(final BTDeviceModel device){
+        new AlertDialog.Builder(MainActivity.this)
+                .setTitle("UnPair bluetooth device?")
+                .setMessage("Do you want to unpair with " + device.getName())
+                .setIcon(R.drawable.ic_action_bluetooth_unpair)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+//                        if (BA.isDiscovering()) {
+//                            BA.cancelDiscovery();
+//                        }
+
+                        BluetoothDevice btDevice = device.getDevice();
+                       // Method m = null;
+                        try {
+                            Method m = btDevice.getClass().getMethod("removeBond", (Class[]) null);
+                            m.invoke(btDevice, (Object[]) null);
+                        } catch (Exception e) { e.printStackTrace();}
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) { }
+                }).show();
     }
 
     public BluetoothAdapter InitBluetooth() {
@@ -164,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
             boolean connected = false;
             if (bt.getBondState() == 12) bonded = true;
 
-            BTDevices.add(new BTDeviceModel(bt.getName(), bt.getAddress(), bt, bonded, connected, R.drawable.ic_action_bluetooth_paired));
+            BTDevices.add(new BTDeviceModel(bt.getName(), bt.getAddress(), BTDeviceType.GetBTDeviceType(bt), bt, bonded, connected, R.drawable.ic_action_bluetooth_paired));
         }
         UpdateListView();
     }
@@ -174,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
         BTDevices_list.setAdapter(mAdapter);
     }
 
-    public void AddToDeviceList(BluetoothDevice device){
+    public void AddToDeviceList(BluetoothDevice device) {
         //if device is already in list break
         for (BTDeviceModel bt : BTDevices) {
             if (bt.getAddress().equals(device.getAddress())) return;
@@ -182,12 +253,14 @@ public class MainActivity extends AppCompatActivity {
 
         //Checks if Name is null and not already in deviceList
         String deviceName = device.getName();
-        if (deviceName == null) deviceName = device.getAddress();
-        BTDevices.add(new BTDeviceModel(deviceName, device.getAddress(), device, false, false, 0));
-        makeText(MainActivity.this, "Found device " + device.getName(), Toast.LENGTH_SHORT).show();
+        if (deviceName == null) {
+            if (hideNoName) return;
+            else deviceName = device.getAddress();
+        }
 
+        makeText(MainActivity.this, "Found device " + device.getName(), Toast.LENGTH_SHORT).show();
+        BTDevices.add(new BTDeviceModel(deviceName, device.getAddress(), BTDeviceType.GetBTDeviceType(device), device, false, false, 0));
         mAdapter.notifyDataSetChanged();
-        //UpdateListView();
     }
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -212,20 +285,15 @@ public class MainActivity extends AppCompatActivity {
             } else if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 AddToDeviceList(device);
 
-            } else if (BluetoothDevice.ACTION_PAIRING_REQUEST.equals(action)){
-                Toast.makeText(MainActivity.this,"Trying to pair with " + device.getName(), Toast.LENGTH_LONG).show();
+            } else if (BluetoothDevice.ACTION_PAIRING_REQUEST.equals(action)) {
+                Toast.makeText(MainActivity.this, "Trying to pair with " + device.getName(), Toast.LENGTH_LONG).show();
                 setBluetoothPairingPin(device);
+                mAdapter.notifyDataSetChanged();
             }
-
-
-
         }
     };
 
-    public void setBluetoothPairingPin(BluetoothDevice device)
-    {
-        //byte[] pinBytes = convertPinToBytes("0000");
-
+    public void setBluetoothPairingPin(BluetoothDevice device) {
         try {
             byte[] pin = (byte[]) BluetoothDevice.class.getMethod("convertPinToBytes", String.class).invoke(BluetoothDevice.class, "1234");
             Log.d("", "Try to set the PIN");
@@ -255,12 +323,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_visible) {
             Intent getVisible = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
             startActivityForResult(getVisible, 0);
@@ -268,8 +332,20 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
+        if (id == R.id.action_hideNoName) {
+            if (hideNoName) {
+                hideNoName = false;
+                item.setTitle("Hide devices with no name");
+                makeText(MainActivity.this, "Showing devices with no name", Toast.LENGTH_SHORT).show();
+            } else {
+                hideNoName = true;
+                item.setTitle("Show devices with no name");
+                makeText(MainActivity.this, "Hiding devices with no name", Toast.LENGTH_SHORT).show();
+            }
+        }
         return super.onOptionsItemSelected(item);
     }
+
 
     @Override
     public void onDestroy() {
@@ -299,32 +375,11 @@ public class MainActivity extends AppCompatActivity {
         BTDevices_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                final BTDeviceModel device = BTDevices.get(position);
+                BTDeviceModel device = BTDevices.get(position);
 
                 if (device.isPaired()) {
 
-                } else {
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("Pair bluetooth device?")
-                            .setMessage("Do you want to pair with " + device.getName())
-                            .setIcon(R.drawable.ic_action_bluetooth_connected)
-                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-                                    if (BA.isDiscovering()) {
-                                        BA.cancelDiscovery();
-                                    }
-                                    device.getDevice().createBond();
-                                    mAdapter.notifyDataSetChanged();
-
-                                }
-                            })
-
-                            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-
-                                }
-                            }).show();
-                }
+                } else PairDevice(device);
             }
         });
 
@@ -332,45 +387,12 @@ public class MainActivity extends AppCompatActivity {
         BTDevices_list.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long l) {
-                final BTDeviceModel device = BTDevices.get(position);
-
-                if (device.isPaired()) {
-
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("UnPair bluetooth device?")
-                            .setMessage("Do you want to unpair with " + device.getName())
-                            .setIcon(R.drawable.ic_action_bluetooth_unpair)
-                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-                                    if (BA.isDiscovering()) {
-                                        BA.cancelDiscovery();
-                                    }
-
-                                    BluetoothDevice btDevice = device.getDevice();
-                                    Method m = null;
-                                    try {
-                                        m = btDevice.getClass().getMethod("removeBond", (Class[]) null);
-                                        m.invoke(btDevice, (Object[]) null);
-
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                    }
-                                    mAdapter.notifyDataSetChanged();
-                                }
-                            })
-
-                            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-
-                                }
-                            }).show();
-                }
+                BTDeviceModel device = BTDevices.get(position);
+                if (device.isPaired()) UnpairDevice(device);
                 return true;
             }
         });
-
     }
-
 }
 
 //

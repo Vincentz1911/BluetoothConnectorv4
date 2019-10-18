@@ -7,4 +7,9 @@
         android:orderInCategory="100"
         android:title="@string/action_visible"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_hideNoName"
+        android:orderInCategory="100"
+        android:title="@string/action_showNoName"
+        app:showAsAction="never" />
 </menu>
