@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                BluetoothLEScanner(BA);
                 BA.cancelDiscovery();
                 BA.startDiscovery();
             }
@@ -55,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
         InitGUI();
         InitBluetooth();
+        BondedDevices();
 
         //ASKING PERMISSION FOR ACCESSING LOCATION FOR BTLe
         new RequestPermissions(this, Manifest.permission.ACCESS_COARSE_LOCATION);
@@ -69,10 +71,6 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
         registerReceiver(mReceiver, filter);
-
-        //Search for new BT
-        BluetoothLEScanner(BA);
-        BA.startDiscovery();
     }
 
     void BluetoothLEScanner(BluetoothAdapter BA) {
@@ -84,40 +82,27 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onBatchScanResults(List<ScanResult> results) {
-                super.onBatchScanResults(results);
-            }
-
+            public void onBatchScanResults(List<ScanResult> results) { super.onBatchScanResults(results); }
             @Override
             public void onScanFailed(int errorCode) {
                 super.onScanFailed(errorCode);
             }
-
             @Override
             public int hashCode() {
                 return super.hashCode();
             }
-
             @Override
             public boolean equals(@Nullable Object obj) {
                 return super.equals(obj);
             }
-
             @Override
-            protected Object clone() throws CloneNotSupportedException {
-                return super.clone();
-            }
-
-            @NonNull
-            @Override
+            protected Object clone() throws CloneNotSupportedException { return super.clone(); }
+            @NonNull @Override
             public String toString() {
                 return super.toString();
             }
-
             @Override
-            protected void finalize() throws Throwable {
-                super.finalize();
-            }
+            protected void finalize() throws Throwable { super.finalize(); }
         });
     }
 
@@ -128,42 +113,11 @@ public class MainActivity extends AppCompatActivity {
 
         UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
-        BluetoothSocket socket = null;
         try {
-            socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
+            BluetoothSocket socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
             socket.connect();
         } catch (IOException e) {
             e.printStackTrace();
-        }
-    }
-
-    String GetType(BluetoothDevice device){
-        int majorBtClass = device.getBluetoothClass().getMajorDeviceClass();
-        switch (majorBtClass) {
-            case BluetoothClass.Device.Major.AUDIO_VIDEO:
-                return "Audio/Video";
-            case BluetoothClass.Device.Major.COMPUTER:
-                return "Computer";
-            case BluetoothClass.Device.Major.HEALTH:
-                return "Health";
-            case BluetoothClass.Device.Major.IMAGING:
-                return "Imaging";
-            case BluetoothClass.Device.Major.MISC:
-                return "Misc";
-            case BluetoothClass.Device.Major.NETWORKING:
-                return "Networking";
-            case BluetoothClass.Device.Major.PERIPHERAL:
-                return "Peripheral";
-            case BluetoothClass.Device.Major.PHONE:
-                return "Phone";
-            case BluetoothClass.Device.Major.TOY:
-                return "Toy";
-            case BluetoothClass.Device.Major.UNCATEGORIZED:
-                return "Uncategorized";
-            case BluetoothClass.Device.Major.WEARABLE:
-                return "Wearable";
-            default:
-                return "Unknown (" + majorBtClass + ")";
         }
     }
 
@@ -174,9 +128,6 @@ public class MainActivity extends AppCompatActivity {
                 .setIcon(R.drawable.ic_action_bluetooth_connected)
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
-//                        if (BA.isDiscovering()) {
-//                            BA.cancelDiscovery();
-//                        }
                         device.getDevice().createBond();
                     }
                 })
@@ -192,12 +143,7 @@ public class MainActivity extends AppCompatActivity {
                 .setIcon(R.drawable.ic_action_bluetooth_unpair)
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
-//                        if (BA.isDiscovering()) {
-//                            BA.cancelDiscovery();
-//                        }
-
                         BluetoothDevice btDevice = device.getDevice();
-                       // Method m = null;
                         try {
                             Method m = btDevice.getClass().getMethod("removeBond", (Class[]) null);
                             m.invoke(btDevice, (Object[]) null);
@@ -280,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
                 //discovery finishes, dismis progress dialog
 
                 makeText(MainActivity.this, "Finished scanning", Toast.LENGTH_LONG).show();
-                findViewById(R.id.loadingPanel).setVisibility(View.GONE);
+                findViewById(R.id.loadingPanel).setVisibility(View.INVISIBLE);
 
             } else if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 AddToDeviceList(device);
@@ -376,10 +322,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 BTDeviceModel device = BTDevices.get(position);
-
-                if (device.isPaired()) {
-
-                } else PairDevice(device);
+                if (!device.isPaired()) PairDevice(device);
             }
         });
 
@@ -394,28 +337,3 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 }
-
-//
-//    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-//        @Override
-//        public void onReceive(Context context, Intent intent) {
-//            String action = intent.getAction();
-//            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-//
-//            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-//           ... //Device found
-//            }
-//            else if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
-//           ... //Device is now connected
-//            }
-//            else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-//           ... //Done searching
-//            }
-//            else if (BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED.equals(action)) {
-//           ... //Device is about to disconnect
-//            }
-//            else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
-//           ... //Device has disconnected
-//            }
-//        }
-//    };

@@ -42,8 +42,6 @@ public class BTDeviceListAdapter extends ArrayAdapter<BTDeviceModel> {
 
             TextView type = listItem.findViewById(R.id.textView_type);
             type.setText(currentDevice.getType());
-//            TextView status = listItem.findViewById(R.id.textView_status);
-//            if (currentDevice.getConnected()) status.setText("Connected");
 
             ImageView image = listItem.findViewById(R.id.imageView_paired);
             image.setImageResource(currentDevice.getmImageDrawable());

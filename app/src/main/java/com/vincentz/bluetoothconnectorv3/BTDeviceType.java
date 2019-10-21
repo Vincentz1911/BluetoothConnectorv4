@@ -53,13 +53,13 @@ class BTDeviceType {
             case BluetoothClass.Device.TOY_DOLL_ACTION_FIGURE : return "DOLL_ACTION_FIGURE";
             case BluetoothClass.Device.TOY_GAME : return "GAME";
             case BluetoothClass.Device.TOY_ROBOT : return "ROBOT";
-            case BluetoothClass.Device.TOY_UNCATEGORIZED : return "";
+            case BluetoothClass.Device.TOY_UNCATEGORIZED : return "TOY";
             case BluetoothClass.Device.TOY_VEHICLE : return "TOY_VEHICLE";
             case BluetoothClass.Device.WEARABLE_GLASSES : return "GLASSES";
             case BluetoothClass.Device.WEARABLE_HELMET : return "HELMET";
             case BluetoothClass.Device.WEARABLE_JACKET : return "JACKET";
             case BluetoothClass.Device.WEARABLE_PAGER : return "PAGER";
-            case BluetoothClass.Device.WEARABLE_UNCATEGORIZED : return "WEARABLE_UNCATEGORIZED";
+            case BluetoothClass.Device.WEARABLE_UNCATEGORIZED : return "WEARABLE";
             case BluetoothClass.Device.WEARABLE_WRIST_WATCH : return "WRIST_WATCH";
             case BluetoothClass.Device.Major.PERIPHERAL : return "PERIPHERAL";
             case BluetoothClass.Device.Major.UNCATEGORIZED : return "UNCATEGORIZED";

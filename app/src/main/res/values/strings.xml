@@ -4,4 +4,5 @@
     <string name="action_visible">Make this device visible</string>
     <string name="action_hideNoName">Hide Devices with no name</string>
     <string name="action_showNoName">Show Devices with no name</string>
+    <string name="action_help">Help</string>
 </resources>
